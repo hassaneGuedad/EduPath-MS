@@ -1,0 +1,340 @@
+services:
+  # Base de données PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: edupath-postgres
+    environment:
+      POSTGRES_USER: edupath
+      POSTGRES_PASSWORD: edupath123
+      POSTGRES_DB: edupath
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init_databases.sh:/docker-entrypoint-initdb.d/init_databases.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U edupath"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # LMS Connector (Node.js)
+  lms-connector:
+    build:
+      context: ./services/lms-connector
+    container_name: edupath-lms-connector
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PORT=3001
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://edupath:edupath123@postgres:5432/edupath_lms
+      - OAUTH2_CLIENT_ID=${OAUTH2_CLIENT_ID:-}
+      - OAUTH2_CLIENT_SECRET=${OAUTH2_CLIENT_SECRET:-}
+      - OAUTH2_REDIRECT_URI=${OAUTH2_REDIRECT_URI:-http://localhost:3001/auth/callback}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # PrepaData (Python + Flask)
+  prepa-data:
+    build:
+      context: ./services/prepa-data
+    container_name: edupath-prepa-data
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./data:/app/data
+      - ./services/prepa-data/airflow/dags:/app/airflow/dags
+    environment:
+      - PORT=3002
+      - LMS_CONNECTOR_URL=http://lms-connector:3001
+      - DATABASE_URL=postgresql://edupath:edupath123@postgres:5432/edupath_prepa
+      - AIRFLOW_DATABASE_URL=postgresql://edupath:edupath123@postgres:5432/airflow_db
+    depends_on:
+      lms-connector:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Student Profiler (Python)
+  student-profiler:
+    build:
+      context: ./services/student-profiler
+    container_name: edupath-student-profiler
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - PREPA_DATA_URL=http://prepa-data:3002
+      - DATABASE_URL=postgresql://edupath:edupath123@postgres:5432/edupath_profiler
+    depends_on:
+      prepa-data:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Path Predictor (Python + XGBoost)
+  path-predictor:
+    build:
+      context: ./services/path-predictor
+    container_name: edupath-path-predictor
+    ports:
+      - "3004:3004"
+    environment:
+      - PORT=3004
+      - PREPA_DATA_URL=http://prepa-data:3002
+      - DATABASE_URL=postgresql://edupath:edupath123@postgres:5432/edupath_predictor
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    depends_on:
+      prepa-data:
+        condition: service_started
+      mlflow:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Reco Builder (Python + Transformers + Faiss)
+  reco-builder:
+    build:
+      context: ./services/reco-builder
+    container_name: edupath-reco-builder
+    ports:
+      - "3005:3005"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PORT=3005
+      - PREPA_DATA_URL=http://prepa-data:3002
+      - PATH_PREDICTOR_URL=http://path-predictor:3004
+      - DATABASE_URL=postgresql://edupath:edupath123@postgres:5432/edupath_reco
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin123
+      - MINIO_BUCKET=educational-resources
+    depends_on:
+      prepa-data:
+        condition: service_started
+      path-predictor:
+        condition: service_started
+      minio:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Teacher Console (React)
+  teacher-console:
+    build:
+      context: ./services/teacher-console
+    container_name: edupath-teacher-console
+    ports:
+      - "3006:3006"
+    volumes:
+      - ./services/teacher-console/src:/app/src
+      - ./services/teacher-console/public:/app/public
+      - ./services/teacher-console/index.html:/app/index.html
+      - ./services/teacher-console/vite.config.js:/app/vite.config.js
+      - ./services/teacher-console/package.json:/app/package.json
+    environment:
+      - VITE_API_BASE=http://localhost:3002
+      - VITE_AUTH_API=http://localhost:3008
+      - CHOKIDAR_USEPOLLING=true # Pour le hot-reload sur Windows/Docker
+    depends_on:
+      - prepa-data
+    restart: unless-stopped
+
+  # Student Coach API (FastAPI)
+  student-coach-api:
+    build:
+      context: ./services/student-coach-api
+    container_name: edupath-student-coach-api
+    ports:
+      - "3007:3007"
+    environment:
+      - PORT=3007
+      - PREPA_DATA_URL=http://prepa-data:3002
+      - STUDENT_PROFILER_URL=http://student-profiler:3003
+      - PATH_PREDICTOR_URL=http://path-predictor:3004
+      - RECO_BUILDER_URL=http://reco-builder:3005
+    depends_on:
+      - prepa-data
+      - student-profiler
+      - path-predictor
+      - reco-builder
+    restart: unless-stopped
+
+  # Auth Service (FastAPI)
+  auth-service:
+    build:
+      context: ./services/auth-service
+    container_name: edupath-auth-service
+    ports:
+      - "3008:3008"
+    volumes:
+      - ./services/auth-service/src:/app/src
+      - ./uploads:/app/uploads
+    environment:
+      - PORT=3008
+      - DATABASE_URL=postgresql://edupath:edupath123@postgres:5432/edupath_auth
+      - SECRET_KEY=your-secret-key-change-in-production
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USER=hassan15guedad@gmail.com
+      - SMTP_PASSWORD=rmchlzgfcqikisan
+      - SMTP_FROM=hassan15guedad@gmail.com
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Student Portal (React)
+  student-portal:
+    build:
+      context: ./services/student-portal
+    container_name: edupath-student-portal
+    ports:
+      - "3009:3009"
+    volumes:
+      - ./services/student-portal/src:/app/src
+      - ./services/student-portal/public:/app/public
+      - ./services/student-portal/index.html:/app/index.html
+      - ./services/student-portal/vite.config.js:/app/vite.config.js
+    environment:
+      - VITE_AUTH_API=http://localhost:3008
+      - VITE_STUDENT_API=http://localhost:3007
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - auth-service
+      - student-coach-api
+    restart: unless-stopped
+
+  # MinIO - Stockage d'objets pour les ressources multimédias
+  minio:
+    image: minio/minio:latest
+    container_name: edupath-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    restart: unless-stopped
+
+  # MLflow - Tracking des modèles ML
+  mlflow:
+    build:
+      context: ./services/mlflow
+    container_name: edupath-mlflow
+    ports:
+      - "5000:5000"
+    environment:
+      - BACKEND_STORE_URI=postgresql://edupath:edupath123@postgres:5432/mlflow_db
+      - DEFAULT_ARTIFACT_ROOT=/mlflow/artifacts
+    volumes:
+      - mlflow_artifacts:/mlflow/artifacts
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Airflow - Orchestration des tâches
+  airflow-init:
+    image: apache/airflow:2.7.3
+    container_name: edupath-airflow-init
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://edupath:edupath123@postgres:5432/airflow_db
+      - AIRFLOW__CORE__FERNET_KEY=${AIRFLOW_FERNET_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db migrate
+        airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@edupath.com --password admin || true
+    restart: "no"
+
+  airflow-webserver:
+    image: apache/airflow:2.7.3
+    container_name: edupath-airflow-webserver
+    ports:
+      - "8081:8080"
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://edupath:edupath123@postgres:5432/airflow_db
+      - AIRFLOW__CORE__FERNET_KEY=${AIRFLOW_FERNET_KEY:-}
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=true
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false
+      - AIRFLOW__API__AUTH_BACKENDS=airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session
+    volumes:
+      - ./services/prepa-data/airflow/dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    command: webserver
+    restart: unless-stopped
+
+  airflow-scheduler:
+    image: apache/airflow:2.7.3
+    container_name: edupath-airflow-scheduler
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://edupath:edupath123@postgres:5432/airflow_db
+      - AIRFLOW__CORE__FERNET_KEY=${AIRFLOW_FERNET_KEY:-}
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=true
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false
+    volumes:
+      - ./services/prepa-data/airflow/dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    command: scheduler
+    restart: unless-stopped
+
+  # Benchmarks Service
+  benchmarks-service:
+    build:
+      context: ./services/benchmarks-service
+    container_name: edupath-benchmarks-service
+    ports:
+      - "3010:3010"
+    environment:
+      - PORT=3010
+      - PREPA_DB_URL=postgresql://edupath:edupath123@postgres:5432/edupath_prepa
+      - PROFILER_DB_URL=postgresql://edupath:edupath123@postgres:5432/edupath_profiler
+      - PREDICTOR_DB_URL=postgresql://edupath:edupath123@postgres:5432/edupath_predictor
+      - RECO_DB_URL=postgresql://edupath:edupath123@postgres:5432/edupath_reco
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  minio_data:
+  mlflow_artifacts:
+  airflow_logs:
+

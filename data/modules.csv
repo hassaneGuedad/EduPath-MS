@@ -1,0 +1,5 @@
+module_id,module_name,category,credits,difficulty_level,prerequisites
+MATH101,Mathematics Fundamentals,STEM,3,Intermediate,
+CS101,Introduction to Programming,STEM,4,Beginner,
+ENG101,English Composition,Humanities,3,Beginner,
+

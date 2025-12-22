@@ -1,0 +1,11 @@
+resource_id,resource_name,resource_type,module_id,difficulty_level,description,tags
+R1,Basic Algebra Tutorial,Video,MATH101,Beginner,Introduction to algebraic concepts,algebra,math,basics
+R2,Advanced Calculus Problems,Exercise,MATH101,Advanced,Complex calculus problems,calculus,math,advanced
+R3,Python Basics Course,Video,CS101,Beginner,Learn Python from scratch,python,programming,basics
+R4,Data Structures Guide,Document,CS101,Intermediate,Understanding data structures,programming,data-structures
+R5,Grammar Rules Handbook,Document,ENG101,Beginner,Complete grammar reference,english,grammar
+R6,Essay Writing Tips,Video,ENG101,Intermediate,How to write better essays,english,writing
+R7,Math Problem Solver,Exercise,MATH101,Intermediate,Practice problems with solutions,math,problems
+R8,Code Review Examples,Document,CS101,Intermediate,Best practices in coding,programming,code-review
+R9,Creative Writing Workshop,Video,ENG101,Advanced,Advanced writing techniques,english,writing,creative
+

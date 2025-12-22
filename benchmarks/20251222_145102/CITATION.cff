@@ -1,0 +1,14 @@
+﻿cff-version: 1.2.0
+message: 'If you use this dataset, please cite it as below.'
+type: dataset
+title: 'EduPath Learning Analytics - Anonymized Student Profiles'
+version: 1.0.0
+date-released: 2025-12-22
+authors:
+  - name: 'EduPath Research Team'
+keywords:
+  - learning analytics
+  - educational data mining
+  - student profiling
+  - dropout prediction
+license: CC-BY-4.0
