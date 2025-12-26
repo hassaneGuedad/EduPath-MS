@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import './Login.css'
 
 function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
@@ -25,119 +27,74 @@ function Login() {
   }
 
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: '100vh',
-      backgroundColor: '#f5f5f5'
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        padding: '40px',
-        borderRadius: '8px',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-        width: '100%',
-        maxWidth: '400px'
-      }}>
-        <h2 style={{ marginBottom: '30px', textAlign: 'center', color: '#333' }}>
-          Student Portal - Connexion
-        </h2>
-        
-        {error && (
-          <div style={{
-            padding: '10px',
-            backgroundColor: '#fee',
-            color: '#c33',
-            borderRadius: '4px',
-            marginBottom: '20px'
-          }}>
-            {error}
+    <div className="login-page">
+      <div className="main-title">EduPath</div>
+
+      <div className="login-container">
+
+        <div className="info-side">
+          <h1>Bienvenue sur votre Portail Étudiant</h1>
+          <p className="description">
+            Accédez à vos cours, suivez votre progression et recevez des recommandations personnalisées pour réussir votre parcours académique.
+          </p>
+
+          <div className="features">
+            <div className="feature-item">
+              <div className="feature-icon">📚</div>
+              <div>Accès complet aux ressources pédagogiques</div>
+            </div>
+            <div className="feature-item">
+              <div className="feature-icon">📈</div>
+              <div>Suivi de progression en temps réel</div>
+            </div>
+            <div className="feature-item">
+              <div className="feature-icon">🎯</div>
+              <div>Parcours d'apprentissage adaptatif</div>
+            </div>
           </div>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{
-                width: '100%',
-                padding: '10px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '16px'
-              }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-              Mot de passe
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={{
-                width: '100%',
-                padding: '10px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '16px'
-              }}
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%',
-              padding: '12px',
-              backgroundColor: '#2ecc71',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              fontSize: '16px',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.6 : 1
-            }}
-          >
-            {loading ? 'Connexion...' : 'Se connecter'}
-          </button>
-        </form>
-
-        <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#e8f5e9', borderRadius: '4px' }}>
-          <p style={{ margin: '0 0 10px 0', fontWeight: 'bold', color: '#2e7d32' }}>Compte étudiant par défaut:</p>
-          <p style={{ margin: '5px 0', fontSize: '14px' }}>Email: <strong>student@edupath.com</strong></p>
-          <p style={{ margin: '5px 0', fontSize: '14px' }}>Password: <strong>student123</strong></p>
         </div>
-        
-        <div style={{ marginTop: '15px', textAlign: 'center', color: '#666', fontSize: '12px' }}>
-          <p>Ou créez un nouveau compte via l'API:</p>
-          <code style={{ 
-            display: 'block', 
-            padding: '10px', 
-            backgroundColor: '#f5f5f5', 
-            borderRadius: '4px',
-            fontSize: '11px',
-            marginTop: '5px',
-            textAlign: 'left'
-          }}>
-            POST http://localhost:3008/auth/register
-          </code>
+
+        <div className="form-side">
+          <div className="login-card">
+            <div className="login-header">
+              <div className="brand">SP</div>
+              <h2>Connexion</h2>
+            </div>
+
+            {error && <div className="error-box">{error}</div>}
+
+            <form onSubmit={handleSubmit}>
+              <div className="field">
+                <label>Email</label>
+                <div className="input-group">
+                  <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                  <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="étudiant@exemple.com" required />
+                </div>
+              </div>
+
+              <div className="field">
+                <label>Mot de passe</label>
+                <div className="input-group">
+                  <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  <input className="input" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
+                  <button type="button" className="toggle-pass" onClick={() => setShowPassword(s => !s)}>
+                    {showPassword ? (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <button className="primary-btn" type="submit" disabled={loading}>{loading ? 'Connexion...' : 'Se connecter'}</button>
+            </form>
+          </div>
         </div>
+
       </div>
     </div>
   )
 }
 
 export default Login
-
