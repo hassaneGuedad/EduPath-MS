@@ -6,42 +6,49 @@ pipeline {
         GIT_REPO = 'https://github.com/hassaneGuedad/EduPath-MS.git' // À adapter si besoin
     }
     stages {
-        stage('Checkout') {
-            steps {
-                git url: env.GIT_REPO
+        pipeline {
+            agent any
+            environment {
+                DOCKER_COMPOSE = 'docker-compose'
+                NGROK_AUTH = credentials('ngrok-auth-token') // À configurer dans Jenkins Credentials
+                GIT_REPO = 'https://github.com/hassaneGuedad/EduPath-MS.git'
+            }
+            stages {
+                stage('Checkout') {
+                    steps {
+                        git url: env.GIT_REPO, branch: 'micro'
+                    }
+                }
+                stage('Build Docker Images') {
+                    steps {
+                        bat 'docker-compose build'
+                    }
+                }
+                stage('Run Tests') {
+                    steps {
+                        // Exemple: lancer les tests unitaires Python
+                        bat 'docker-compose run --rm prepa-data pytest || exit 0'
+                        // Ajouter d'autres tests selon vos services
+                    }
+                }
+                stage('Deploy Services') {
+                    steps {
+                        bat 'docker-compose up -d'
+                    }
+                }
+                stage('Expose with ngrok') {
+                    steps {
+                        bat 'curl -o ngrok.zip https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-amd64.zip'
+                        bat 'powershell -Command "Expand-Archive -Path ngrok.zip -DestinationPath . -Force"'
+                        bat 'ngrok.exe config add-authtoken %NGROK_AUTH%'
+                        bat 'start /B ngrok.exe http 3006'
+                        // Adapter le port selon le service à exposer (ex: 3006 pour TeacherConsole)
+                    }
+                }
+            }
+            post {
+                always {
+                    bat 'docker-compose down || exit 0'
+                }
             }
         }
-        stage('Build Docker Images') {
-            steps {
-                sh 'docker-compose build'
-            }
-        }
-        stage('Run Tests') {
-            steps {
-                // Exemple: lancer les tests unitaires Python
-                sh 'docker-compose run --rm prepa-data pytest || true'
-                // Ajouter d'autres tests selon vos services
-            }
-        }
-        stage('Deploy Services') {
-            steps {
-                sh 'docker-compose up -d'
-            }
-        }
-        stage('Expose with ngrok') {
-            steps {
-                sh 'curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null'
-                sh 'echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list'
-                sh 'sudo apt update && sudo apt install -y ngrok'
-                sh 'ngrok config add-authtoken $NGROK_AUTH'
-                sh 'ngrok http 3006 --log=stdout &'
-                // Adapter le port selon le service à exposer (ex: 3006 pour TeacherConsole)
-            }
-        }
-    }
-    post {
-        always {
-            sh 'docker-compose down || true'
-        }
-    }
-}
