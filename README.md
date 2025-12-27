@@ -1,3 +1,48 @@
+# Communication entre microservices
+
+Les microservices de la plateforme EduPath-MS sont organisés en pipeline et communiquent via différents protocoles selon le besoin :
+
+- **API REST (HTTP)** : pour les appels synchrones (requêtes/réponses classiques)
+- **RabbitMQ (files de messages)** : pour la communication asynchrone, la diffusion d’événements et le découplage des traitements
+- **gRPC** : pour les échanges performants entre services Python (notamment pour le transfert de données structurées ou volumineuses)
+
+**Schéma de flux simplifié :**
+
+```
+LMS-Connector  --(REST)-->  Prepa-Data  --(RabbitMQ)-->  Student-Profiler  --(gRPC)-->  Path-Predictor  --(REST)-->  Reco-Builder
+      |                                                                                                         |
+      |                                                                                                         |
+      +-------------------(REST)----------------------> TeacherConsole / StudentCoach (UI)
+```
+
+**Détail des interactions :**
+
+- **LMS-Connector** :
+  - Récupère les données des plateformes LMS (Moodle, Canvas)
+  - Envoie les données brutes à Prepa-Data via API REST
+
+- **Prepa-Data** :
+  - Nettoie et transforme les données
+  - Publie les features calculées dans une file RabbitMQ
+
+- **Student-Profiler** :
+  - Consomme les features depuis RabbitMQ
+  - Segmente les étudiants (KMeans, PCA)
+  - Envoie les profils à Path-Predictor via gRPC
+
+- **Path-Predictor** :
+  - Prédit le risque d’échec à partir des profils
+  - Expose une API REST pour recevoir les requêtes de prédiction
+  - Transmet les scores à Reco-Builder via REST
+
+- **Reco-Builder** :
+  - Génère des recommandations personnalisées
+  - Expose une API REST pour les interfaces utilisateur
+
+- **TeacherConsole / StudentCoach** :
+  - Consomment les données via API REST pour l’affichage en temps réel
+
+Cette architecture permet la scalabilité, la tolérance aux pannes et l’extension facile de la plateforme.
 # EduPath-MS — Learning Analytics & Recommandations
 
 ## Description
