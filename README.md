@@ -52,6 +52,8 @@ Test pipeline : deuxième modification du README le 28/12/2025
 Test pipeline : troisième modification du README le 28/12/2025
 
 Test pipeline : quatrième modification du README le 28/12/2025
+
+Test pipeline : cinquième modification du README le 28/12/2025
 # EduPath-MS — Learning Analytics & Recommandations
 
 ## Description
