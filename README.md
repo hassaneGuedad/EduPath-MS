@@ -43,6 +43,9 @@ LMS-Connector  --(REST)-->  Prepa-Data  --(RabbitMQ)-->  Student-Profiler  --(gR
   - Consomment les données via API REST pour l’affichage en temps réel
 
 Cette architecture permet la scalabilité, la tolérance aux pannes et l’extension facile de la plateforme.
+# Communication entre microservices
+
+Test pipeline : modification du README le 28/12/2025
 # EduPath-MS — Learning Analytics & Recommandations
 
 ## Description
