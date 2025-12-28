@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        NGROK_AUTH = credentials('NGROK_AUTH') // si tu as besoin
-    }
-
     stages {
         stage('Checkout SCM') {
             steps {
@@ -49,8 +45,10 @@ pipeline {
 
     post {
         always {
-            echo 'Cleaning up unused containers and images...'
-            bat 'docker system prune -f'
+            node {
+                echo 'Cleaning up unused containers and images...'
+                bat 'docker system prune -f'
+            }
         }
         success {
             echo 'Pipeline completed successfully!'
