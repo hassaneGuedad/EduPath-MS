@@ -5,9 +5,6 @@ Microservice Python/Flask pour le nettoyage, la normalisation et le calcul des f
 
 ## Stack Technique
 - **Runtime**: Python 3.11+
-- **Framework**: Flask
-- **Bibliothèques**: pandas, numpy
-
 ## Endpoints
 
 ### GET /features/{student_id}
@@ -68,4 +65,26 @@ LMS_CONNECTOR_URL=http://localhost:3001
 docker build -t prepa-data .
 docker run -p 3002:3002 prepa-data
 ```
+
+# prepa-data microservice
+
+Ce dossier contient le microservice prepa-data du projet EduPath-MS-EMSI.
+
+## Contenu
+- `Dockerfile` : Image Docker pour le service
+- `requirements.txt` : Dépendances Python
+- `src/app.py` : Code principal de l'application
+- `test_sample.py` : Exemple de test Pytest
+
+## Tests
+Pour exécuter les tests :
+
+    pytest
+
+## Lancement (exemple)
+
+    docker-compose up --build prepa-data
+
+## Auteur
+EduPath-MS-EMSI Team
 
