@@ -2,28 +2,35 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_COMPOSE = 'docker-compose'
-        GIT_REPO = 'https://github.com/hassaneGuedad/EduPath-MS.git'
-        NGROK_AUTH = credentials('ngrok-auth-token')
+        NGROK_AUTH = credentials('NGROK_AUTH') // si tu as besoin
     }
 
     stages {
-
-        stage('Checkout') {
+        stage('Checkout SCM') {
             steps {
-                git url: env.GIT_REPO, branch: 'micro'
+                checkout([$class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    userRemoteConfigs: [[url: 'https://github.com/hassaneGuedad/EduPath-MS.git']]
+                ])
             }
         }
 
         stage('Build Docker Images') {
             steps {
-                bat 'docker-compose build'
+                bat 'docker-compose build --parallel'
             }
         }
 
         stage('Run Tests') {
             steps {
-                bat 'docker-compose run --rm prepa-data pytest || exit 0'
+                script {
+                    try {
+                        bat 'docker-compose run --rm prepa-data pytest'
+                    } catch (err) {
+                        echo "Tests failed but pipeline will continue: ${err}"
+                        currentBuild.result = 'UNSTABLE'
+                    }
+                }
             }
         }
 
@@ -33,19 +40,26 @@ pipeline {
             }
         }
 
-        stage('Expose with ngrok') {
+        stage('Post Deployment') {
             steps {
-                bat 'curl -o ngrok.zip https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-amd64.zip'
-                bat 'powershell -Command "Expand-Archive -Path ngrok.zip -DestinationPath . -Force"'
-                bat 'ngrok.exe config add-authtoken %NGROK_AUTH%'
-                bat 'start /B ngrok.exe http 3006'
+                echo 'All services deployed successfully.'
             }
         }
     }
 
     post {
         always {
-            bat 'docker-compose down || exit 0'
+            echo 'Cleaning up unused containers and images...'
+            bat 'docker system prune -f'
+        }
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        unstable {
+            echo 'Pipeline completed with warnings (tests failed).'
+        }
+        failure {
+            echo 'Pipeline failed!'
         }
     }
 }
