@@ -46,6 +46,8 @@ Cette architecture permet la scalabilité, la tolérance aux pannes et l’exten
 # Communication entre microservices
 
 Test pipeline : modification du README le 28/12/2025
+
+Test pipeline : deuxième modification du README le 28/12/2025
 # EduPath-MS — Learning Analytics & Recommandations
 
 ## Description
