@@ -45,10 +45,8 @@ pipeline {
 
     post {
         always {
-            node {
-                echo 'Cleaning up unused containers and images...'
-                bat 'docker system prune -f'
-            }
+            echo 'Cleaning up unused containers and images...'
+            bat 'docker system prune -f'
         }
         success {
             echo 'Pipeline completed successfully!'
