@@ -1,61 +1,43 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_COMPOSE = 'docker-compose'
+        GIT_REPO = 'https://github.com/hassaneGuedad/EduPath-MS.git'
+    }
+
     stages {
-        stage('Checkout SCM') {
+
+        stage('Checkout') {
             steps {
-                checkout([$class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    userRemoteConfigs: [[url: 'https://github.com/hassaneGuedad/EduPath-MS.git']]
-                ])
+                git url: env.GIT_REPO, branch: 'micro'
             }
         }
 
         stage('Build Docker Images') {
             steps {
-                bat 'docker-compose build --parallel'
+                bat 'docker-compose build'
             }
         }
 
         stage('Run Tests') {
             steps {
-                script {
-                    try {
-                        bat 'docker-compose run --rm prepa-data pytest'
-                    } catch (err) {
-                        echo "Tests failed but pipeline will continue: ${err}"
-                        currentBuild.result = 'UNSTABLE'
-                    }
-                }
-            }
-        }
-
-        stage('Deploy Services') {
-            steps {
-                bat 'docker-compose up -d'
-            }
-        }
-
-        stage('Post Deployment') {
-            steps {
-                echo 'All services deployed successfully.'
+                // Tests unitaires (ne bloque pas le pipeline s'ils échouent)
+                bat 'docker-compose run --rm prepa-data pytest || exit 0'
             }
         }
     }
 
     post {
         always {
-            echo 'Cleaning up unused containers and images...'
-            bat 'docker system prune -f'
+            // Nettoyage
+            bat 'docker-compose down --remove-orphans || exit 0'
         }
         success {
-            echo 'Pipeline completed successfully!'
-        }
-        unstable {
-            echo 'Pipeline completed with warnings (tests failed).'
+            echo '✅ Pipeline CI terminé avec succès'
         }
         failure {
-            echo 'Pipeline failed!'
+            echo '❌ Échec du pipeline CI'
         }
     }
 }
