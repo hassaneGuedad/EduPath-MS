@@ -384,6 +384,18 @@ Test pipeline : cinquième modification du README le 28/12/2025
 
 <img width="638" height="320" alt="Capture_webHooks" src="https://github.com/user-attachments/assets/18eacb43-a0f5-437c-8dcc-a29357944fdf" />
 
+## Démonstration Video
+
+## teacher-console
+
+https://github.com/user-attachments/assets/3d0b0ea3-afa6-487b-b2e5-10ab8b3ae4d2
+
+
+## Student-portal
+
+
+https://github.com/user-attachments/assets/007a327d-ccc5-44ba-91d6-7d07b20ba1fa
+
 
 
 ## Auteurs
