@@ -1,58 +1,58 @@
-# CI/CD Pipeline Jenkins – EduPath-MS-EMSI
+# Configuration Rapide - Pipelines Jenkins Séparés
 
-Ce document explique le fonctionnement du pipeline Jenkins utilisé pour le projet EduPath-MS-EMSI.
+## Résumé
+Chaque microservice possède maintenant son propre Jenkinsfile pour des déploiements indépendants.
 
-## Objectifs du pipeline
-- Automatiser la construction, les tests et le déploiement des microservices.
-- Garantir la qualité du code via l’exécution automatique des tests.
-- Déployer les services Docker en environnement d’intégration.
+## Services Configurés (11 au total)
 
-## Étapes principales du pipeline
+### Services Backend Python
+- ✅ `services/auth-service/Jenkinsfile`
+- ✅ `services/student-coach-api/Jenkinsfile`
+- ✅ `services/student-profiler/Jenkinsfile`
+- ✅ `services/path-predictor/Jenkinsfile`
+- ✅ `services/reco-builder/Jenkinsfile`
+- ✅ `services/prepa-data/Jenkinsfile`
+- ✅ `services/benchmarks-service/Jenkinsfile`
 
-1. **Checkout SCM**
-   - Récupère le code source depuis le dépôt GitHub (branche micro ou main).
+### Services Frontend
+- ✅ `services/student-portal/Jenkinsfile` (React)
+- ✅ `services/teacher-console/Jenkinsfile` (React)
+- ✅ `services/student-coach-flutter/Jenkinsfile` (Flutter)
 
-2. **Build Docker Images**
-   - Construit toutes les images Docker des microservices définis dans `docker-compose.yml`.
-   - Utilise la commande :
-     ```
-     docker-compose build --parallel
-     ```
+### Services Node.js
+- ✅ `services/lms-connector/Jenkinsfile`
 
-3. **Run Tests**
-   - Exécute les tests unitaires (Pytest) dans le conteneur `prepa-data`.
-   - Commande utilisée :
-     ```
-     docker-compose run --rm prepa-data pytest
-     ```
-   - Si aucun test n’est trouvé ou si un test échoue, le pipeline est marqué "UNSTABLE" ou "FAILED".
+## Prochaines Étapes
 
-4. **Deploy Services**
-   - Déploie tous les services définis dans `docker-compose.yml` en mode détaché.
-   - Commande :
-     ```
-     docker-compose up -d
-     ```
+### 1. Créer les Jobs Jenkins
+Pour chaque service, créez un job **Multibranch Pipeline** dans Jenkins :
+```
+Nom du job : edupath-[nom-du-service]
+Script Path : services/[nom-du-service]/Jenkinsfile
+```
 
-5. **Post Deployment**
-   - Affiche un message de succès si tous les services sont déployés.
+### 2. Configurer GitHub Webhook
+```
+URL : http://[JENKINS_URL]/github-webhook/
+Events : Push events
+```
 
-6. **Nettoyage**
-   - Supprime les conteneurs et images Docker inutilisés pour libérer de l’espace disque.
-   - Commande :
-     ```
-     docker system prune -f
-     ```
+### 3. Tester
+```bash
+# Modifier un service
+cd services/auth-service
+# Faire une modification
+git commit -am "test: trigger pipeline"
+git push
 
-## Fichiers clés
-- `Jenkinsfile` : Définit la logique du pipeline.
-- `docker-compose.yml` : Orchestration des microservices.
-- `services/prepa-data/test_sample.py` : Exemple de test Pytest.
+# Vérifier que seul le job edupath-auth-service se déclenche
+```
 
-## Bonnes pratiques
-- Ajouter des tests unitaires pour chaque microservice.
-- Vérifier que tous les services démarrent correctement après déploiement.
-- Surveiller l’espace disque sur le serveur Jenkins.
+## Documentation Complète
+Consultez `JENKINS_SETUP_GUIDE.md` pour les instructions détaillées.
 
-## Auteur
-EduPath-MS-EMSI Team
+## Avantages
+- ✅ Déploiements indépendants par service
+- ✅ Builds plus rapides (seul le service modifié)
+- ✅ Isolation des erreurs
+- ✅ Scalabilité facilitée
