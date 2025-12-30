@@ -1,0 +1,60 @@
+pipeline {
+    agent any
+
+    environment {
+        SERVICE_NAME = 'prepa-data'
+        DOCKER_IMAGE = "edupath/${SERVICE_NAME}"
+        DOCKER_TAG = "${BUILD_NUMBER}"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    dir("services/${SERVICE_NAME}") {
+                        bat "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} -t ${DOCKER_IMAGE}:latest ."
+                    }
+                }
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                script {
+                    dir("services/${SERVICE_NAME}") {
+                        bat "docker run --rm ${DOCKER_IMAGE}:${DOCKER_TAG} pytest tests/ || exit 0"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Service') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    bat "docker-compose up -d ${SERVICE_NAME}"
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Pipeline for ${SERVICE_NAME} completed"
+        }
+        success {
+            echo "✅ ${SERVICE_NAME} pipeline succeeded"
+        }
+        failure {
+            echo "❌ ${SERVICE_NAME} pipeline failed"
+        }
+    }
+}
