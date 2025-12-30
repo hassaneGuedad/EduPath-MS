@@ -397,7 +397,7 @@ https://github.com/user-attachments/assets/3d0b0ea3-afa6-487b-b2e5-10ab8b3ae4d2
 https://github.com/user-attachments/assets/e6a24d9c-2940-4019-9567-57069402bb0b
 
 
-## Student-poCoach - Interface mobile étudiant (consulter leur progression)
+## Student-Coach - Interface mobile étudiant (consulter leur progression)
 
 <img width="960" height="509" alt="Capture_mobile" src="https://github.com/user-attachments/assets/b942cd14-f245-46a5-b384-9ee580e35766" />
 
