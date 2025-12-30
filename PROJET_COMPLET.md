@@ -1,4 +1,4 @@
-# 🎉 EduPath-MS - Projet Complet et Fonctionnel
+# EduPath-MS - Projet Complet et Fonctionnel
 
 ## ✅ Statut Final
 
